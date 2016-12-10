@@ -1,11 +1,10 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # Abort this script if error happens
 set -e
 
-# Variable for implementation
+# Get this command's name
 CMD_NAME=`basename $0`
-CUR_DIR=`pwd`
 
 # Check whether the OS is macOS or not
 if [ "$(uname)" != 'Darwin' ]; then
@@ -34,27 +33,28 @@ if [ "${#}" -lt 1 ]; then
 fi
 
 # Move specified files / directories to the trash box
-for NAME in ${*}; do
+for NAME in "${@}"; do
     # Don't remove "." and ".."
-    if [ `basename "\\${NAME}"` == "." ] ||
-       [ `basename "\\${NAME}"` == ".." ]; then
+    if [ "${NAME: -1}" == "." -o "${NAME: -1}" == ".." ]; then
         echo "${CMD_NAME}: \".\" and \"..\" may not be removed." 1>&2
         continue
     fi
     # Check whether specified file / directory exists
-    if [ ! -e ${NAME} ]; then
+    if [ ! -e "${NAME}" ]; then
         echo "${CMD_NAME}: ${NAME}: No such file or directory." 1>&2
         continue
     fi
     # Require "-r" option when remove directory
-    if [ -d ${NAME} -a ${FLAG_R} != true ]; then
+    if [ -d "${NAME}" -a "${FLAG_R}" != true ]; then
         echo "${CMD_NAME}: ${NAME}: Require \"-r\" option when remove directory." 1>&2
         continue
     fi
+    # Calculate the absolute path
+    TARGET=$(cd `dirname "${NAME}"` && pwd)"/"`basename "${NAME}"`
     # Remove specified file / directory
     osascript -e """
     tell application \"Finder\"
-        move POSIX file \"${CUR_DIR}/${NAME}\" to trash
+        move POSIX file \"${TARGET}\" to trash
     end tell
-    """
+    """ > /dev/null
 done
